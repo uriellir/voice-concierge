@@ -1,0 +1,4 @@
+services: {}
+  # db: PostgreSQL
+  # api: .NET backend
+  # agent: TypeScript LiveKit agent
