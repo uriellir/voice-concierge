@@ -1,4 +1,19 @@
-services: {}
+services:
   # db: PostgreSQL
+  db:
+    image: postgres:16
+    container_name: voiceconcierge
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: concierge
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - concierge_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  concierge_postgres_data:
   # api: .NET backend
   # agent: TypeScript LiveKit agent
