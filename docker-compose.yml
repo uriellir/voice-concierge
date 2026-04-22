@@ -1,19 +1,57 @@
 services:
-  # db: PostgreSQL
   db:
     image: postgres:16
-    container_name: voiceconcierge
     restart: unless-stopped
     environment:
-      POSTGRES_DB: concierge
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - concierge_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: src/api/VoiceConcierge/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      Embedding__ApiKey: ${LLM_API_KEY}
+      Embedding__Model: text-embedding-3-small
+      Embedding__BaseUrl: ${LLM_BASE_URL}
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+  agent:
+    build:
+      context: .
+      dockerfile: src/agent/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      API_BASE_URL: http://api:8080
+      CONCIERGE_TOP_K: ${CONCIERGE_TOP_K}
+      CONCIERGE_MIN_CONFIDENCE: ${CONCIERGE_MIN_CONFIDENCE}
+      CONCIERGE_AGENT_NAME: ${CONCIERGE_AGENT_NAME}
+      LIVEKIT_URL: ${LIVEKIT_URL}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_MODEL: ${LLM_MODEL}
+      LLM_BASE_URL: ${LLM_BASE_URL}
 
 volumes:
   concierge_postgres_data:
-  # api: .NET backend
-  # agent: TypeScript LiveKit agent

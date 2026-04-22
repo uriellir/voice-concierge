@@ -2,8 +2,8 @@
 .DS_Store
 
 # env
-#.env
-#.env.*
+.env
+.env.*
 
 # node
 node_modules/
