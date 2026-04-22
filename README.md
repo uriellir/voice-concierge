@@ -208,6 +208,33 @@ npm run build
 node dist/main.js dev
 ```
 
+### Local developer helpers
+
+There are two useful local-only helpers in the repo:
+
+- [VoiceConcierge.http](C:/Dev/VoiceConcierge/src/api/VoiceConcierge/VoiceConcierge.http)
+  - a simple HTTP scratch file for manual backend testing from editors that support `.http` requests
+  - useful for quickly calling endpoints like:
+    - `/api/knowledge/search`
+    - `/api/knowledge/reindex`
+    - `/api/concierge/ask`
+    - `/api/unanswered`
+
+- [index.ts](C:/Dev/VoiceConcierge/src/agent/src/index.ts)
+  - a console-only agent entrypoint for local development without LiveKit
+  - useful if you want to validate:
+    - backend connectivity
+    - response composition
+    - LLM-based concierge phrasing
+  - run it with:
+
+```powershell
+cd C:\Dev\VoiceConcierge\src\agent
+npm run dev:console
+```
+
+That mode lets you type guest questions directly into the terminal and inspect replies before testing the full voice path.
+
 ### Option B: Docker Compose stack
 
 From the repo root:
@@ -231,6 +258,18 @@ docker compose logs -f api
 docker compose logs -f agent
 docker compose down
 ```
+
+## Development Notes
+
+For day-to-day development, the easiest workflow is usually:
+
+1. run Postgres with Docker
+2. run the API locally with `dotnet run`
+3. run either:
+   - `node dist/main.js dev` for the LiveKit worker
+   - `npm run dev:console` for text-only debugging
+
+That gives faster iteration than rebuilding the full Docker stack every time.
 
 The Dockerized API is exposed at:
 

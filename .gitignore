@@ -8,14 +8,19 @@
 # node
 node_modules/
 dist/
+src/agent/node_modules/
+src/agent/dist/
 
 # .NET
 bin/
 obj/
+src/api/**/bin/
+src/api/**/obj/
 
 # IDE
 .vscode/
 .idea/
+.vs/
 
 # logs
 *.log
