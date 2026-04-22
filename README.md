@@ -52,6 +52,19 @@ You also need external credentials for:
 
 ## Environment Setup
 
+## First-Time Setup From Git Clone
+
+If someone downloads the repo fresh from Git, these are the recommended steps to run the full LiveKit path.
+
+### 1. Clone the repository
+
+```powershell
+git clone <your-repo-url>
+cd VoiceConcierge
+```
+
+### 2. Create the root `.env`
+
 Create a file named [`.env`](C:/Dev/VoiceConcierge/.env) at the repository root.
 
 Use this template:
@@ -89,20 +102,7 @@ Notes:
 - `API_BASE_URL=http://localhost:5282` is correct for local non-Docker agent runs
 - in Docker Compose, the agent uses `http://api:8080` internally
 
-## First-Time Setup From Git Clone
-
-If someone downloads the repo fresh from Git, these are the exact steps to run it.
-
-### 1. Clone the repository
-
-```powershell
-git clone <your-repo-url>
-cd VoiceConcierge
-```
-
-### 2. Create the root `.env`
-
-Create [`.env`](C:/Dev/VoiceConcierge/.env) and fill in:
+Create [`.env`](C:/Dev/VoiceConcierge/.env) using the template above and fill in:
 
 - LiveKit URL/key/secret
 - OpenAI API key
@@ -123,119 +123,11 @@ node dist/main.js download-files
 
 This downloads the local turn-detection files needed by the LiveKit worker.
 
-### 5. Start PostgreSQL
+## Running the Full LiveKit Flow
 
-From the repo root:
+This is the main evaluation path for the project.
 
-```powershell
-cd C:\Dev\VoiceConcierge
-docker compose up db -d
-```
-
-### 6. Start the API
-
-In a new terminal:
-
-```powershell
-cd C:\Dev\VoiceConcierge\src\api\VoiceConcierge
-dotnet run
-```
-
-The backend will:
-
-- run migrations
-- seed the Meridian data
-- start on `http://localhost:5282`
-
-### 7. Generate embeddings
-
-After the API is running, call:
-
-```http
-POST http://localhost:5282/api/knowledge/reindex
-Content-Type: application/json
-
-{
-  "force": true
-}
-```
-
-This creates fresh embeddings for the seeded knowledge items.
-
-### 8. Start the LiveKit agent
-
-In another terminal:
-
-```powershell
-cd C:\Dev\VoiceConcierge\src\agent
-node dist/main.js dev
-```
-
-### 9. Open the LiveKit Agents Playground
-
-Use:
-
-[https://agents-playground.livekit.io](https://agents-playground.livekit.io)
-
-Connect it to the same LiveKit project and select the registered agent:
-
-- `meridian-concierge`
-
-Then:
-
-- allow microphone access
-- join a session
-- begin speaking to the agent
-
-## Local Run Options
-
-### Option A: Recommended local dev flow
-
-Use separate terminals:
-
-```powershell
-# terminal 1
-cd C:\Dev\VoiceConcierge
-docker compose up db -d
-
-# terminal 2
-cd C:\Dev\VoiceConcierge\src\api\VoiceConcierge
-dotnet run
-
-# terminal 3
-cd C:\Dev\VoiceConcierge\src\agent
-npm run build
-node dist/main.js dev
-```
-
-### Local developer helpers
-
-There are two useful local-only helpers in the repo:
-
-- [VoiceConcierge.http](C:/Dev/VoiceConcierge/src/api/VoiceConcierge/VoiceConcierge.http)
-  - a simple HTTP scratch file for manual backend testing from editors that support `.http` requests
-  - useful for quickly calling endpoints like:
-    - `/api/knowledge/search`
-    - `/api/knowledge/reindex`
-    - `/api/concierge/ask`
-    - `/api/unanswered`
-
-- [index.ts](C:/Dev/VoiceConcierge/src/agent/src/index.ts)
-  - a console-only agent entrypoint for local development without LiveKit
-  - useful if you want to validate:
-    - backend connectivity
-    - response composition
-    - LLM-based concierge phrasing
-  - run it with:
-
-```powershell
-cd C:\Dev\VoiceConcierge\src\agent
-npm run dev:console
-```
-
-That mode lets you type guest questions directly into the terminal and inspect replies before testing the full voice path.
-
-### Option B: Docker Compose stack
+### 1. Docker Compose Stack
 
 From the repo root:
 
@@ -250,30 +142,64 @@ This starts:
 - `api`
 - `agent`
 
-Useful commands:
+The Dockerized API is exposed at:
+- `http://localhost:8080`
 
-```powershell
-docker compose ps
-docker compose logs -f api
-docker compose logs -f agent
-docker compose down
+### 2. Generate embeddings
+
+After the API is running, call (can do also from swagger):
+
+```http
+POST http://localhost:5282/api/knowledge/reindex
+Content-Type: application/json
+
+{
+  "force": true
+}
 ```
 
-## Development Notes
+This creates fresh embeddings for the seeded knowledge items.
 
-For day-to-day development, the easiest workflow is usually:
+### 3. Using the LiveKit Agent Playground
 
-1. run Postgres with Docker
-2. run the API locally with `dotnet run`
-3. run either:
-   - `node dist/main.js dev` for the LiveKit worker
-   - `npm run dev:console` for text-only debugging
+Once the backend and agent are running, this is the quickest way to test the full voice experience.
 
-That gives faster iteration than rebuilding the full Docker stack every time.
+### Playground steps
 
-The Dockerized API is exposed at:
+1. Open [https://agents-playground.livekit.io](https://agents-playground.livekit.io)
+2. Connect it to the same LiveKit project used by the agent
+3. Use the same values from [`.env`](C:/Dev/VoiceConcierge/.env):
+   - `LIVEKIT_URL`
+   - `LIVEKIT_API_KEY`
+   - `LIVEKIT_API_SECRET`
+4. Select or target the registered agent:
+   - `meridian-concierge`
+5. Join a session or room
+6. Allow microphone access
+7. Start speaking to the concierge
 
-- `http://localhost:8080`
+### Good first test questions
+
+- `What time is check-in?`
+- `Is the poker room open right now?`
+- `What's your best restaurant?`
+- `Can I bring my dog to the hotel?`
+
+### What should happen
+
+- your speech is transcribed by the LiveKit voice pipeline
+- the agent calls the backend `/api/concierge/ask`
+- the backend returns a grounded result or fallback
+- the agent responds with spoken concierge-style audio
+
+### If the playground does not see the agent
+
+Check:
+
+- the agent worker is still running
+- the agent is registered in your LiveKit dashboard as `meridian-concierge`
+- the playground is using the same LiveKit project credentials as the running worker
+- you do not have an old local worker process using different credentials
 
 ## Important Endpoints
 
@@ -323,16 +249,6 @@ Content-Type: application/json
 }
 ```
 
-## Suggested Demo Questions
-
-Use these in the playground:
-
-- `Is the poker room open right now?`
-- `What time is check-in?`
-- `What's your best restaurant?`
-- `Are there any good restaurants nearby you'd recommend?`
-- `Can I bring my dog to the hotel?`
-
 ## Current Core vs Bonus Status
 
 ### Core implemented
@@ -351,6 +267,40 @@ Use these in the playground:
 - unanswered-to-FAQ review workflow
 - voice personality management UI
 - embedded playground inside an admin interface
+
+## Developer Helpers Without LiveKit
+
+These are optional local development helpers
+
+### `VoiceConcierge.http`
+
+[VoiceConcierge.http](C:/Dev/VoiceConcierge/src/api/VoiceConcierge/VoiceConcierge.http) is a simple HTTP scratch file for manual backend testing from editors that support `.http` requests.
+
+It is useful for quickly calling endpoints like:
+
+- `/api/knowledge/search`
+- `/api/knowledge/reindex`
+- `/api/concierge/ask`
+- `/api/unanswered`
+
+### Console-only agent mode
+
+[index.ts](C:/Dev/VoiceConcierge/src/agent/src/index.ts) is a console-only agent entrypoint for local development without LiveKit.
+
+It is useful if you want to validate:
+
+- backend connectivity
+- response composition
+- LLM-based concierge phrasing
+
+Run it with:
+
+```powershell
+cd C:\Dev\VoiceConcierge\src\agent
+npm run dev:console
+```
+
+That mode lets you type guest questions directly into the terminal and inspect replies before testing the full voice path.
 
 ## Troubleshooting
 
