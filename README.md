@@ -93,6 +93,7 @@ LIVEKIT_API_SECRET=your-livekit-api-secret
 LLM_API_KEY=your-openai-api-key
 LLM_MODEL=gpt-4o-mini
 LLM_BASE_URL=https://api.openai.com/v1
+```
 
 Notes:
 
