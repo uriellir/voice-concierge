@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace VoiceConcierge.Models;
 
@@ -24,9 +23,13 @@ public class KnowledgeItem
 
     public string? FactsJson { get; set; }
 
+    public Guid? RawPropertyRecordId { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset UpdatedAt { get; set; }
+
+    public RawPropertyRecord? RawPropertyRecord { get; set; }
 
     public KnowledgeEmbedding? Embedding { get; set; }
 }
