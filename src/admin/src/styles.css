@@ -400,6 +400,80 @@ select {
   background: rgba(255, 255, 255, 0.04);
 }
 
+.playground-hero,
+.playground-card {
+  border: 1px solid var(--panel-border);
+  background: var(--panel-strong);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+}
+
+.playground-hero {
+  padding: 22px;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.playground-hero h3 {
+  margin: 0 0 10px;
+  font-size: 1.25rem;
+}
+
+.playground-hero p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.7;
+  max-width: 720px;
+}
+
+.playground-actions {
+  display: grid;
+  gap: 12px;
+  min-width: 190px;
+}
+
+.playground-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  color: var(--text-muted);
+}
+
+.status-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  background: rgba(255, 159, 143, 0.55);
+  box-shadow: 0 0 0 5px rgba(255, 159, 143, 0.12);
+}
+
+.status-dot.online {
+  background: rgba(146, 217, 145, 0.92);
+  box-shadow: 0 0 0 5px rgba(146, 217, 145, 0.12);
+}
+
+.meta-separator {
+  color: rgba(244, 234, 215, 0.35);
+}
+
+.playground-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.playground-card {
+  padding: 20px;
+}
+
+.playground-card p {
+  margin: 0;
+  line-height: 1.7;
+}
+
 @media (max-width: 900px) {
   .app-shell {
     padding: 20px;
@@ -413,6 +487,15 @@ select {
 
   .stat-grid {
     grid-template-columns: 1fr;
+  }
+
+  .playground-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .playground-hero {
+    grid-template-columns: 1fr;
+    display: grid;
   }
 
   .sidebar-card {

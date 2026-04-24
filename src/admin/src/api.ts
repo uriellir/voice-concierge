@@ -49,3 +49,20 @@ export async function setActiveVoice(voiceId: string): Promise<VoiceOptionsRespo
 
   return (await response.json()) as VoiceOptionsResponse;
 }
+
+export async function askConcierge(query: string): Promise<string> {
+  const response = await fetch(`${apiBaseUrl}/api/concierge/ask`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to ask concierge: ${response.status}`);
+  }
+
+  const payload = (await response.json()) as { spokenResponse?: string; fallbackMessage?: string };
+  return payload.spokenResponse || payload.fallbackMessage || "I'm sorry, but I couldn't generate a spoken response.";
+}
