@@ -176,6 +176,33 @@ app.MapGet("/api/admin/unanswered", async (AppDbContext dbContext, CancellationT
 .WithName("GetUnansweredQuestionsQueue")
 .WithTags("Admin");
 
+app.MapGet("/api/admin/faqs", async (AppDbContext dbContext, CancellationToken cancellationToken) =>
+{
+    var items = await dbContext.KnowledgeItems
+        .OrderBy(x => x.Category)
+        .ThenBy(x => x.Title)
+        .Select(x => new
+        {
+            x.Id,
+            x.Title,
+            x.Category,
+            x.CanonicalQuestion,
+            x.AnswerText,
+            x.CreatedAt,
+            x.UpdatedAt
+        })
+        .ToListAsync(cancellationToken);
+
+    return Results.Ok(new
+    {
+        TotalFaqs = items.Count,
+        TotalCategories = items.Select(x => x.Category).Distinct().Count(),
+        Items = items
+    });
+})
+.WithName("GetAdminFaqs")
+.WithTags("Admin");
+
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
