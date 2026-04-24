@@ -28,6 +28,7 @@ export default defineAgent({
     proc.userData.vad = await silero.VAD.load();
   },
   entry: async (ctx: JobContext) => {
+    const activeVoice = await apiClient.getActiveVoice();
     const session = new voice.AgentSession({
       stt: new inference.STT({
         model: "deepgram/nova-3",
@@ -38,7 +39,7 @@ export default defineAgent({
       }),
       tts: new inference.TTS({
         model: "cartesia/sonic-3",
-        voice: "9626c31c-bec5-4cca-baa8-f8ba9e84c8bc",
+        voice: activeVoice.providerVoiceId,
       }),
       turnDetection: new livekit.turnDetector.MultilingualModel(),
       vad: ctx.proc.userData.vad! as silero.VAD,
@@ -59,7 +60,7 @@ export default defineAgent({
 
     await ctx.connect();
     session.generateReply({
-      instructions: "Greet the guest warmly, introduce yourself as the Meridian Voice Concierge, and offer assistance.",
+      instructions: `Greet the guest warmly, introduce yourself as the Meridian Voice Concierge, and offer assistance. Use the ${activeVoice.voiceName} voice profile for this conversation.`,
     });
   },
 });

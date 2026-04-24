@@ -15,6 +15,12 @@ type ConciergeAskResponse = {
   message: string;
 };
 
+type AgentVoiceResponse = {
+  voiceId: string;
+  voiceName: string;
+  providerVoiceId: string;
+};
+
 export class LivekitConciergeApiClient {
   constructor(private readonly baseUrl: string) {}
 
@@ -38,5 +44,16 @@ export class LivekitConciergeApiClient {
     }
 
     return (await response.json()) as ConciergeAskResponse;
+  }
+
+  async getActiveVoice(): Promise<AgentVoiceResponse> {
+    const response = await fetch(`${this.baseUrl}/api/agent/voice`);
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Voice configuration request failed with ${response.status}: ${body}`);
+    }
+
+    return (await response.json()) as AgentVoiceResponse;
   }
 }
