@@ -62,12 +62,14 @@ Responsibilities:
 - provide a staff-facing interface for bonus workflows
 - surface FAQ items from the knowledge base
 - surface unanswered guest questions and their frequency
+- allow staff to view and change the active concierge voice
 - create a clear foundation for future FAQ and voice-management modules
 
 The current admin implementation focuses on:
 
 - FAQ list and search
 - unanswered-questions review workflow
+- voice selection and current active voice display
 
 This separation makes it easier to explain, test, and evolve each concern independently.
 
@@ -167,8 +169,22 @@ The first implemented admin slice focuses on:
 - searching FAQ items from the admin UI
 - viewing unanswered questions
 - viewing frequency counts for repeated unanswered questions
+- viewing the available voice options
+- selecting the active voice for new conversations
 
 The FAQ view is intentionally read-only at this stage so the first admin increment can validate the data flow and layout before adding create, edit, and delete workflows.
+
+## Why Voice Configuration Is Stored In The Backend
+
+The active voice is stored in the backend rather than only in the frontend so the setting becomes part of the system state, not just the current browser session.
+
+This makes it possible to:
+
+- keep the selected voice consistent across admin sessions
+- let the voice agent read the latest setting for each new conversation
+- apply voice changes without restarting the running agent
+
+The current implementation applies the selected voice to new conversations by having the agent fetch the active voice from the API when a new session starts.
 
 ## Seeded CSV Data
 

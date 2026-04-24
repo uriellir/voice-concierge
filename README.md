@@ -14,7 +14,7 @@ The current implementation supports:
 - unanswered-question tracking
 - seeded Meridian property data
 - a LiveKit-powered voice playground flow
-- an admin panel for reviewing FAQ items and unanswered questions
+- an admin panel for reviewing FAQ items, unanswered questions, and voice settings
 
 ## Architecture
 
@@ -33,7 +33,7 @@ The system is split into three layers:
 
 - `src/admin`
   - owns the admin experience
-  - currently includes FAQ review and unanswered questions review modules
+  - currently includes FAQ review, unanswered questions review, and voice settings modules
 
 ## Project Structure
 
@@ -174,12 +174,17 @@ The current admin implementation includes:
 - client-side FAQ search
 - an unanswered questions queue
 - frequency counts for each unanswered question
+- a voice settings view
+- active voice selection
+- current active voice display
 
 This currently covers:
 
 - View all FAQ items
 - View unanswered questions queue
 - See frequency count for each unanswered question
+- Select active voice
+- Display current active voice
 
 ### 2. Generate Embeddings
 
@@ -275,6 +280,23 @@ GET http://localhost:8080/api/admin/unanswered
 GET http://localhost:8080/api/admin/faqs
 ```
 
+### Read voice options for the admin panel
+
+```http
+GET http://localhost:8080/api/admin/voice-options
+```
+
+### Set the active voice
+
+```http
+PUT http://localhost:8080/api/admin/voice-options/active
+Content-Type: application/json
+
+{
+  "voiceId": "james"
+}
+```
+
 ### Rebuild embeddings
 
 ```http
@@ -316,6 +338,7 @@ It is useful for quickly calling endpoints like:
 - `/api/unanswered`
 - `/api/admin/faqs`
 - `/api/admin/unanswered`
+- `/api/admin/voice-options`
 
 ### Console-only agent mode
 
