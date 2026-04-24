@@ -8,13 +8,15 @@ The key architectural choice was to separate:
 
 - knowledge retrieval and persistence in the backend API
 - voice orchestration and concierge-style response generation in the LiveKit agent
+- admin workflows in a dedicated React admin panel
 
-This keeps factual lookup deterministic while allowing the guest experience layer to stay flexible and conversational.
+This keeps factual lookup deterministic while allowing the guest experience layer to stay flexible and conversational, and leaves room for staff-facing workflows without mixing them into the guest voice runtime.
 
 ## Stack Choices
 
 ### Backend API: .NET 10
 ### Voice Agent: TypeScript + LiveKit
+### Admin Panel: React
 
 ### Database: PostgreSQL
 
@@ -24,9 +26,15 @@ PostgreSQL was selected for:
 - solid support with EF Core
 - structured storage for knowledge records and unanswered-question analytics
 
+Entity Framework Core was used for:
+
+- schema management through migrations
+- database access from the API layer
+- keeping the persistence model simple and explicit for a small project
+
 ## Architecture
 
-The project is split into two runtime services:
+The project is split into three runtime services:
 
 ### 1. Backend API
 
@@ -46,6 +54,16 @@ Responsibilities:
 - invoke the backend for grounded answers
 - produce concierge-style spoken responses
 - gracefully handle no-answer cases
+
+### 3. Admin Panel
+
+Responsibilities:
+
+- provide a staff-facing interface for bonus workflows
+- surface unanswered guest questions and their frequency
+- create a clear foundation for future FAQ and voice-management modules
+
+The current admin implementation focuses on the unanswered-questions review workflow.
 
 This separation makes it easier to explain, test, and evolve each concern independently.
 
@@ -88,6 +106,8 @@ The system stores:
 
 This enables future FAQ improvement and helps prioritize what staff should add next.
 
+That same data is now also surfaced in the admin panel so the feedback loop is visible, not just stored.
+
 ## Why the Agent Uses a Response Composer
 
 Raw retrieval output is not enough to match the example conversations.
@@ -127,6 +147,21 @@ This allowed me to focus implementation effort on:
 
 instead of building a custom browser UI from scratch.
 
+## Why A Separate React Admin Panel Was Added
+
+The bonus requirements call for a staff-facing admin experience, which is a different interaction model from the guest voice flow.
+
+A separate React admin panel was added so that:
+
+- staff workflows stay isolated from the guest-facing voice path
+- unanswered-question review can be demonstrated visually
+- future FAQ CRUD and voice settings can be added without changing the core voice architecture
+
+The first implemented admin slice focuses on:
+
+- viewing unanswered questions
+- viewing frequency counts for repeated unanswered questions
+
 ## Seeded CSV Data
 
 - load CSV into raw records
@@ -142,6 +177,7 @@ The project includes `Docker Compose` so anyone can launch:
 - database
 - API
 - agent
+- admin panel
 
 with one command.
 

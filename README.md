@@ -1,10 +1,11 @@
 # Meridian Voice Concierge
 
-Meridian Voice Concierge is a local interview-project implementation of a luxury hotel voice support assistant for The Meridian Casino & Resort.
+Meridian Voice Concierge is a local implementation of a luxury hotel voice support assistant for The Meridian Casino & Resort.
 
 It includes:
 - a `.NET 10` backend API for knowledge retrieval and unanswered-question logging
 - a `TypeScript` LiveKit voice agent
+- a `React` admin panel
 - a `PostgreSQL` database
 - a `Docker Compose` setup for local evaluation
 
@@ -13,15 +14,16 @@ The current implementation supports:
 - unanswered-question tracking
 - seeded Meridian property data
 - a LiveKit-powered voice playground flow
+- an admin panel for reviewing unanswered questions and their frequency
 
 ## Architecture
 
-The system is split into two layers:
+The system is split into three layers:
 
 - `src/api/VoiceConcierge`
   - owns the knowledge base
   - stores raw property data, retrieval items, embeddings, and unanswered questions
-  - exposes backend endpoints for search and question logging
+  - exposes backend endpoints for search, concierge responses, and admin data
 
 - `src/agent`
   - owns the guest-facing voice experience
@@ -29,12 +31,23 @@ The system is split into two layers:
   - calls the backend API for grounded answers
   - turns those results into concierge-style spoken responses
 
+- `src/admin`
+  - owns the admin experience
+  - currently includes the unanswered questions review module
+
 ## Project Structure
 
 - `src/api/VoiceConcierge` - backend API
 - `src/agent` - LiveKit voice agent
+- `src/admin` - React admin panel
 - `docs/technical-decisions.md` - technical design summary
-- `docker-compose.yml` - local orchestration for database, API, and agent
+- `docker-compose.yml` - local orchestration for database, API, agent, and admin UI
+
+## Tech Notes
+
+- `Entity Framework Core` is used for database access, schema management, and migrations
+- `PostgreSQL` is the application database
+- `DBeaver` can be used to inspect the local database tables during development
 
 ## Prerequisites
 
@@ -44,6 +57,7 @@ Install these before running the project:
 - `.NET SDK 10`
 - `Node.js 20+`
 - `npm`
+- `DBeaver` (optional, for database inspection)
 
 You also need external credentials for:
 
@@ -71,15 +85,15 @@ Use this template:
 
 ```env
 # PostgreSQL
-POSTGRES_DB=meridian
+POSTGRES_DB=concierge
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
 POSTGRES_PORT=5432
 
 # API
 API_PORT=8080
-CONNECTION_STRING=Host=db;Port=5432;Database=meridian;Username=postgres;Password=postgres
-API_BASE_URL=http://localhost:5282
+CONNECTION_STRING=Host=db;Port=5432;Database=concierge;Username=postgres;Password=postgres
+API_BASE_URL=http://localhost:8080
 CONCIERGE_TOP_K=5
 CONCIERGE_MIN_CONFIDENCE=0.55
 CONCIERGE_AGENT_NAME=Meridian Voice Concierge
@@ -100,13 +114,8 @@ Notes:
 - `LLM_API_KEY` is used in two places:
   - backend embeddings
   - agent response composition
-- `API_BASE_URL=http://localhost:5282` is correct for local non-Docker agent runs
-- in Docker Compose, the agent uses `http://api:8080` internally
-
-Create [`.env`](C:/Dev/VoiceConcierge/.env) using the template above and fill in:
-
-- LiveKit URL/key/secret
-- OpenAI API key
+- `API_BASE_URL=http://localhost:8080` matches the Docker Compose API exposure
+- use the same database name consistently across the project
 
 ### 3. Install agent dependencies
 
@@ -124,9 +133,10 @@ node dist/main.js download-files
 
 This downloads the local turn-detection files needed by the LiveKit worker.
 
-## Running the Full LiveKit Flow
+## Running The Full Stack
 
-This is the main evaluation path for the project.
+
+This is the main local run path:
 
 ### 1. Docker Compose Stack
 
@@ -142,16 +152,38 @@ This starts:
 - `db`
 - `api`
 - `agent`
+- `admin`
 
-The Dockerized API is exposed at:
-- `http://localhost:8080`
+Available local URLs:
 
-### 2. Generate embeddings
+- API: [http://localhost:8080](http://localhost:8080)
+- Admin UI: [http://localhost:5173](http://localhost:5173)
 
-After the API is running, call (can do also from swagger):
+## Admin Panel
+
+The admin panel is available at:
+
+- [http://localhost:5173](http://localhost:5173)
+
+The current admin implementation includes:
+
+- a page title and admin shell
+- a left navigation menu
+- a right content panel based on the selected module
+- an unanswered questions queue
+- frequency counts for each unanswered question
+
+This currently covers:
+
+- View unanswered questions queue
+- See frequency count for each unanswered question
+
+### 2. Generate Embeddings
+
+After the API is running, call:
 
 ```http
-POST http://localhost:5282/api/knowledge/reindex
+POST http://localhost:8080/api/knowledge/reindex
 Content-Type: application/json
 
 {
@@ -161,11 +193,9 @@ Content-Type: application/json
 
 This creates fresh embeddings for the seeded knowledge items.
 
-### 3. Using the LiveKit Agent Playground
+### 3. Testing The Voice Concierge
 
-Once the backend and agent are running, this is the quickest way to test the full voice experience.
-
-### Playground steps
+Use the LiveKit Agents Playground:
 
 1. Open [https://agents-playground.livekit.io](https://agents-playground.livekit.io)
 2. Connect it to the same LiveKit project used by the agent
@@ -179,7 +209,7 @@ Once the backend and agent are running, this is the quickest way to test the ful
 6. Allow microphone access
 7. Start speaking to the concierge
 
-### Good first test questions
+### Good first test questions:
 
 - `What time is check-in?`
 - `Is the poker room open right now?`
@@ -193,21 +223,12 @@ Once the backend and agent are running, this is the quickest way to test the ful
 - the backend returns a grounded result or fallback
 - the agent responds with spoken concierge-style audio
 
-### If the playground does not see the agent
-
-Check:
-
-- the agent worker is still running
-- the agent is registered in your LiveKit dashboard as `meridian-concierge`
-- the playground is using the same LiveKit project credentials as the running worker
-- you do not have an old local worker process using different credentials
-
 ## Important Endpoints
 
 ### Search the knowledge base
 
 ```http
-POST http://localhost:5282/api/knowledge/search
+POST http://localhost:8080/api/knowledge/search
 Content-Type: application/json
 
 {
@@ -220,7 +241,7 @@ Content-Type: application/json
 ### Concierge-ready response
 
 ```http
-POST http://localhost:5282/api/concierge/ask
+POST http://localhost:8080/api/concierge/ask
 Content-Type: application/json
 
 {
@@ -231,12 +252,18 @@ Content-Type: application/json
 ### Record an unanswered question manually
 
 ```http
-POST http://localhost:5282/api/unanswered
+POST http://localhost:8080/api/unanswered
 Content-Type: application/json
 
 {
   "question": "Can I bring my dog to the hotel?"
 }
+```
+
+### Read unanswered questions for the admin panel
+
+```http
+GET http://localhost:8080/api/admin/unanswered
 ```
 
 ### Rebuild embeddings
@@ -250,28 +277,23 @@ Content-Type: application/json
 }
 ```
 
-## Current Core vs Bonus Status
+## Database Access
 
-### Core implemented
+If you want to inspect the database directly:
 
-- backend knowledge API
-- seeded Meridian property data
-- hybrid FAQ retrieval
-- unanswered-question tracking
-- LiveKit voice-agent integration
-- local playground testing path
-- Docker Compose stack
+- PostgreSQL runs on `localhost:5432`
+- database name should match `POSTGRES_DB` in the root [`.env`](C:/Dev/VoiceConcierge/.env)
+- you can use `DBeaver` to inspect tables like:
+  - `knowledge_items`
+  - `knowledge_embeddings`
+  - `raw_property_records`
+  - `unanswered_questions`
 
-### Bonus not fully implemented yet
+`Entity Framework Core` migrations are located under:
 
-- admin panel for managing FAQ content
-- unanswered-to-FAQ review workflow
-- voice personality management UI
-- embedded playground inside an admin interface
+- [src/api/VoiceConcierge/Migrations](C:/Dev/VoiceConcierge/src/api/VoiceConcierge/Migrations)
 
-## Developer Helpers Without LiveKit
-
-These are optional local development helpers
+## Developer Helpers
 
 ### `VoiceConcierge.http`
 
@@ -283,16 +305,11 @@ It is useful for quickly calling endpoints like:
 - `/api/knowledge/reindex`
 - `/api/concierge/ask`
 - `/api/unanswered`
+- `/api/admin/unanswered`
 
 ### Console-only agent mode
 
 [index.ts](C:/Dev/VoiceConcierge/src/agent/src/index.ts) is a console-only agent entrypoint for local development without LiveKit.
-
-It is useful if you want to validate:
-
-- backend connectivity
-- response composition
-- LLM-based concierge phrasing
 
 Run it with:
 
@@ -301,18 +318,15 @@ cd C:\Dev\VoiceConcierge\src\agent
 npm run dev:console
 ```
 
-That mode lets you type guest questions directly into the terminal and inspect replies before testing the full voice path.
-
 ## Troubleshooting
 
-### LiveKit agent starts but errors about turn detector files
+### The admin panel loads but shows no unanswered questions
 
-Run once from [src/agent](C:/Dev/VoiceConcierge/src/agent):
+Check:
 
-```powershell
-npm run build
-node dist/main.js download-files
-```
+- the admin UI is calling the same API instance you expect
+- the API is using the same PostgreSQL database you expect
+- the database name is consistent across local config and Docker config
 
 ### Playground connects but no answers come back
 
@@ -324,9 +338,14 @@ Check:
 - `LLM_API_KEY` is present
 - `meridian-concierge` appears in your LiveKit dashboard
 
-### Docker stack runs but the playground still uses the old local worker
+### LiveKit agent starts but errors about turn detector files
 
-Stop any local `node dist/main.js dev` process so only the containerized agent is active.
+Run once from [src/agent](C:/Dev/VoiceConcierge/src/agent):
+
+```powershell
+npm run build
+node dist/main.js download-files
+```
 
 ## Security Note
 
