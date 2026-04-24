@@ -13,6 +13,8 @@ export type VoiceOptionsResponse = {
   items: VoiceOption[];
 };
 
+export type VoiceState = VoiceOptionsResponse;
+
 export type FaqItem = {
   id: string;
   title: string;
@@ -29,6 +31,8 @@ export type FaqsResponse = {
   items: FaqItem[];
 };
 
+export type FaqState = FaqsResponse;
+
 export type UnansweredQuestion = {
   id: string;
   originalText: string;
@@ -42,4 +46,12 @@ export type UnansweredQuestionsResponse = {
   totalQuestions: number;
   totalMentions: number;
   items: UnansweredQuestion[];
+};
+
+export type DashboardState = UnansweredQuestionsResponse;
+
+export type AdminSection = {
+  id: AdminSectionId;
+  label: string;
+  eyebrow: string;
 };
