@@ -60,10 +60,14 @@ Responsibilities:
 Responsibilities:
 
 - provide a staff-facing interface for bonus workflows
+- surface FAQ items from the knowledge base
 - surface unanswered guest questions and their frequency
 - create a clear foundation for future FAQ and voice-management modules
 
-The current admin implementation focuses on the unanswered-questions review workflow.
+The current admin implementation focuses on:
+
+- FAQ list and search
+- unanswered-questions review workflow
 
 This separation makes it easier to explain, test, and evolve each concern independently.
 
@@ -159,8 +163,12 @@ A separate React admin panel was added so that:
 
 The first implemented admin slice focuses on:
 
+- viewing FAQ items from the live knowledge base
+- searching FAQ items from the admin UI
 - viewing unanswered questions
 - viewing frequency counts for repeated unanswered questions
+
+The FAQ view is intentionally read-only at this stage so the first admin increment can validate the data flow and layout before adding create, edit, and delete workflows.
 
 ## Seeded CSV Data
 

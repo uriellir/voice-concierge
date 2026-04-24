@@ -14,7 +14,7 @@ The current implementation supports:
 - unanswered-question tracking
 - seeded Meridian property data
 - a LiveKit-powered voice playground flow
-- an admin panel for reviewing unanswered questions and their frequency
+- an admin panel for reviewing FAQ items and unanswered questions
 
 ## Architecture
 
@@ -33,7 +33,7 @@ The system is split into three layers:
 
 - `src/admin`
   - owns the admin experience
-  - currently includes the unanswered questions review module
+  - currently includes FAQ review and unanswered questions review modules
 
 ## Project Structure
 
@@ -170,11 +170,14 @@ The current admin implementation includes:
 - a page title and admin shell
 - a left navigation menu
 - a right content panel based on the selected module
+- an FAQ list view
+- client-side FAQ search
 - an unanswered questions queue
 - frequency counts for each unanswered question
 
 This currently covers:
 
+- View all FAQ items
 - View unanswered questions queue
 - See frequency count for each unanswered question
 
@@ -266,6 +269,12 @@ Content-Type: application/json
 GET http://localhost:8080/api/admin/unanswered
 ```
 
+### Read FAQ items for the admin panel
+
+```http
+GET http://localhost:8080/api/admin/faqs
+```
+
 ### Rebuild embeddings
 
 ```http
@@ -305,6 +314,7 @@ It is useful for quickly calling endpoints like:
 - `/api/knowledge/reindex`
 - `/api/concierge/ask`
 - `/api/unanswered`
+- `/api/admin/faqs`
 - `/api/admin/unanswered`
 
 ### Console-only agent mode
