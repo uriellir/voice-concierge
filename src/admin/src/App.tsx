@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { fetchUnansweredQuestions } from "./api";
-import type { AdminSectionId, UnansweredQuestion } from "./types";
+import { fetchFaqs, fetchUnansweredQuestions } from "./api";
+import type { AdminSectionId, FaqItem, UnansweredQuestion } from "./types";
 
 type DashboardState = {
   totalQuestions: number;
@@ -8,9 +8,15 @@ type DashboardState = {
   items: UnansweredQuestion[];
 };
 
+type FaqState = {
+  totalFaqs: number;
+  totalCategories: number;
+  items: FaqItem[];
+};
+
 const sections: Array<{ id: AdminSectionId; label: string; eyebrow: string }> = [
   { id: "unanswered", label: "Unanswered Queue", eyebrow: "Guest Question Review" },
-  { id: "faq", label: "FAQ Management", eyebrow: "Coming next" },
+  { id: "faq", label: "FAQ Management", eyebrow: "Knowledge Base Review" },
   { id: "voice", label: "Voice Settings", eyebrow: "Coming next" },
   { id: "playground", label: "Playground", eyebrow: "Coming next" },
 ];
@@ -21,18 +27,27 @@ const emptyState: DashboardState = {
   items: [],
 };
 
+const emptyFaqState: FaqState = {
+  totalFaqs: 0,
+  totalCategories: 0,
+  items: [],
+};
+
 export default function App() {
   const [selectedSection, setSelectedSection] = useState<AdminSectionId>("unanswered");
   const [dashboard, setDashboard] = useState<DashboardState>(emptyState);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [faqState, setFaqState] = useState<FaqState>(emptyFaqState);
+  const [loadingUnanswered, setLoadingUnanswered] = useState(true);
+  const [loadingFaqs, setLoadingFaqs] = useState(true);
+  const [unansweredError, setUnansweredError] = useState<string | null>(null);
+  const [faqError, setFaqError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
 
-    async function load() {
+    async function loadUnanswered() {
       try {
-        setLoading(true);
+        setLoadingUnanswered(true);
         const data = await fetchUnansweredQuestions();
 
         if (!active) {
@@ -40,22 +55,48 @@ export default function App() {
         }
 
         setDashboard(data);
-        setError(null);
+        setUnansweredError(null);
       } catch (loadError) {
         if (!active) {
           return;
         }
 
         const message = loadError instanceof Error ? loadError.message : "Unknown error";
-        setError(message);
+        setUnansweredError(message);
       } finally {
         if (active) {
-          setLoading(false);
+          setLoadingUnanswered(false);
         }
       }
     }
 
-    void load();
+    async function loadFaqs() {
+      try {
+        setLoadingFaqs(true);
+        const data = await fetchFaqs();
+
+        if (!active) {
+          return;
+        }
+
+        setFaqState(data);
+        setFaqError(null);
+      } catch (loadError) {
+        if (!active) {
+          return;
+        }
+
+        const message = loadError instanceof Error ? loadError.message : "Unknown error";
+        setFaqError(message);
+      } finally {
+        if (active) {
+          setLoadingFaqs(false);
+        }
+      }
+    }
+
+    void loadUnanswered();
+    void loadFaqs();
 
     return () => {
       active = false;
@@ -106,12 +147,93 @@ export default function App() {
           </div>
 
           {selectedSection === "unanswered" ? (
-            <UnansweredQueuePanel loading={loading} error={error} dashboard={dashboard} />
+            <UnansweredQueuePanel
+              loading={loadingUnanswered}
+              error={unansweredError}
+              dashboard={dashboard}
+            />
+          ) : selectedSection === "faq" ? (
+            <FaqListPanel loading={loadingFaqs} error={faqError} faqState={faqState} />
           ) : (
             <PlaceholderPanel section={selectedSection} />
           )}
         </section>
       </main>
+    </div>
+  );
+}
+
+function FaqListPanel(props: { loading: boolean; error: string | null; faqState: FaqState }) {
+  const { loading, error, faqState } = props;
+  const [searchTerm, setSearchTerm] = useState("");
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredItems = faqState.items.filter((item) => {
+    if (!normalizedSearch) {
+      return true;
+    }
+
+    return [
+      item.title,
+      item.category,
+      item.canonicalQuestion,
+      item.answerText,
+    ].some((value) => value.toLowerCase().includes(normalizedSearch));
+  });
+
+  return (
+    <div className="panel-body">
+      <div className="stat-grid">
+        <article className="stat-card">
+          <span className="stat-label">Published FAQ items</span>
+          <strong>{faqState.totalFaqs}</strong>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Knowledge categories</span>
+          <strong>{faqState.totalCategories}</strong>
+        </article>
+      </div>
+
+      <label className="search-field">
+        <span className="faq-label">Search FAQ items</span>
+        <input
+          type="search"
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          placeholder="Search by title, category, question, or answer"
+        />
+      </label>
+
+      {loading ? <div className="status-card">Loading FAQ items...</div> : null}
+      {error ? <div className="status-card error">{error}</div> : null}
+
+      {!loading && !error ? (
+        filteredItems.length > 0 ? (
+          <div className="faq-grid">
+            {filteredItems.map((item) => (
+              <article className="faq-card" key={item.id}>
+                <div className="faq-card-header">
+                  <span className="faq-category">{item.category}</span>
+                  <strong>{item.title}</strong>
+                </div>
+                <div className="faq-content">
+                  <div>
+                    <span className="faq-label">Canonical question</span>
+                    <p>{item.canonicalQuestion}</p>
+                  </div>
+                  <div>
+                    <span className="faq-label">Answer</span>
+                    <p>{item.answerText}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : faqState.items.length > 0 ? (
+          <div className="status-card">No FAQ items match your current search.</div>
+        ) : (
+          <div className="status-card">No FAQ items are available in the knowledge base yet.</div>
+        )
+      ) : null}
     </div>
   );
 }
@@ -178,9 +300,8 @@ function UnansweredQueuePanel(props: {
   );
 }
 
-function PlaceholderPanel(props: { section: Exclude<AdminSectionId, "unanswered"> }) {
-  const messages: Record<Exclude<AdminSectionId, "unanswered">, string> = {
-    faq: "This area is reserved for FAQ CRUD next, so the admin shell stays stable as the bonus scope grows.",
+function PlaceholderPanel(props: { section: Exclude<AdminSectionId, "unanswered" | "faq"> }) {
+  const messages: Record<Exclude<AdminSectionId, "unanswered" | "faq">, string> = {
     voice: "This panel will host the four concierge voice options and active-voice selection.",
     playground: "This panel is ready for the embedded admin-side concierge test experience.",
   };

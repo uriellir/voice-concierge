@@ -1,4 +1,4 @@
-import type { UnansweredQuestionsResponse } from "./types";
+import type { FaqsResponse, UnansweredQuestionsResponse } from "./types";
 
 declare const __API_BASE_URL__: string;
 
@@ -12,4 +12,14 @@ export async function fetchUnansweredQuestions(): Promise<UnansweredQuestionsRes
   }
 
   return (await response.json()) as UnansweredQuestionsResponse;
+}
+
+export async function fetchFaqs(): Promise<FaqsResponse> {
+  const response = await fetch(`${apiBaseUrl}/api/admin/faqs`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to load FAQs: ${response.status}`);
+  }
+
+  return (await response.json()) as FaqsResponse;
 }
