@@ -13,7 +13,7 @@ public class OpenAiEmbeddingClient : IEmbeddingClient
     {
         _httpClient = httpClient;
         _options = options.Value;
-        _httpClient.BaseAddress = new Uri(_options.BaseUrl);
+        _httpClient.BaseAddress = new Uri(NormalizeBaseUrl(_options.BaseUrl));
     }
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_options.ApiKey);
@@ -52,5 +52,15 @@ public class OpenAiEmbeddingClient : IEmbeddingClient
     private sealed class EmbeddingData
     {
         public float[] Embedding { get; set; } = Array.Empty<float>();
+    }
+
+    private static string NormalizeBaseUrl(string baseUrl)
+    {
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            return "https://api.openai.com/v1/";
+        }
+
+        return baseUrl.EndsWith('/') ? baseUrl : $"{baseUrl}/";
     }
 }
