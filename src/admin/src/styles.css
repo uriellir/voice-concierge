@@ -329,6 +329,77 @@ select {
   line-height: 1.6;
 }
 
+.voice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.voice-card {
+  border: 1px solid var(--panel-border);
+  background: var(--panel-strong);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 18px;
+}
+
+.voice-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.voice-card-header p {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.voice-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.active-badge {
+  display: inline-flex;
+  align-items: center;
+  height: fit-content;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(216, 177, 106, 0.16);
+  color: var(--accent-strong);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.voice-button {
+  border: 1px solid rgba(216, 177, 106, 0.52);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(216, 177, 106, 0.24), rgba(216, 177, 106, 0.1));
+  color: inherit;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: transform 160ms ease, border-color 160ms ease;
+}
+
+.voice-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.voice-button:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.voice-button.muted {
+  border-color: var(--panel-border);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 @media (max-width: 900px) {
   .app-shell {
     padding: 20px;

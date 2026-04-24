@@ -1,5 +1,18 @@
 export type AdminSectionId = "unanswered" | "faq" | "voice" | "playground";
 
+export type VoiceOption = {
+  id: string;
+  name: string;
+  description: string;
+  isActive: boolean;
+};
+
+export type VoiceOptionsResponse = {
+  activeVoiceId: string;
+  activeVoiceName: string;
+  items: VoiceOption[];
+};
+
 export type FaqItem = {
   id: string;
   title: string;

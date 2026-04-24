@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { fetchFaqs, fetchUnansweredQuestions } from "./api";
-import type { AdminSectionId, FaqItem, UnansweredQuestion } from "./types";
+import { fetchFaqs, fetchUnansweredQuestions, fetchVoiceOptions, setActiveVoice } from "./api";
+import type { AdminSectionId, FaqItem, UnansweredQuestion, VoiceOption } from "./types";
 
 type DashboardState = {
   totalQuestions: number;
@@ -14,10 +14,16 @@ type FaqState = {
   items: FaqItem[];
 };
 
+type VoiceState = {
+  activeVoiceId: string;
+  activeVoiceName: string;
+  items: VoiceOption[];
+};
+
 const sections: Array<{ id: AdminSectionId; label: string; eyebrow: string }> = [
   { id: "unanswered", label: "Unanswered Queue", eyebrow: "Guest Question Review" },
   { id: "faq", label: "FAQ Management", eyebrow: "Knowledge Base Review" },
-  { id: "voice", label: "Voice Settings", eyebrow: "Coming next" },
+  { id: "voice", label: "Voice Settings", eyebrow: "Concierge Voice Control" },
   { id: "playground", label: "Playground", eyebrow: "Coming next" },
 ];
 
@@ -33,14 +39,24 @@ const emptyFaqState: FaqState = {
   items: [],
 };
 
+const emptyVoiceState: VoiceState = {
+  activeVoiceId: "",
+  activeVoiceName: "",
+  items: [],
+};
+
 export default function App() {
   const [selectedSection, setSelectedSection] = useState<AdminSectionId>("unanswered");
   const [dashboard, setDashboard] = useState<DashboardState>(emptyState);
   const [faqState, setFaqState] = useState<FaqState>(emptyFaqState);
+  const [voiceState, setVoiceState] = useState<VoiceState>(emptyVoiceState);
   const [loadingUnanswered, setLoadingUnanswered] = useState(true);
   const [loadingFaqs, setLoadingFaqs] = useState(true);
+  const [loadingVoices, setLoadingVoices] = useState(true);
+  const [savingVoiceId, setSavingVoiceId] = useState<string | null>(null);
   const [unansweredError, setUnansweredError] = useState<string | null>(null);
   const [faqError, setFaqError] = useState<string | null>(null);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -95,8 +111,34 @@ export default function App() {
       }
     }
 
+    async function loadVoices() {
+      try {
+        setLoadingVoices(true);
+        const data = await fetchVoiceOptions();
+
+        if (!active) {
+          return;
+        }
+
+        setVoiceState(data);
+        setVoiceError(null);
+      } catch (loadError) {
+        if (!active) {
+          return;
+        }
+
+        const message = loadError instanceof Error ? loadError.message : "Unknown error";
+        setVoiceError(message);
+      } finally {
+        if (active) {
+          setLoadingVoices(false);
+        }
+      }
+    }
+
     void loadUnanswered();
     void loadFaqs();
+    void loadVoices();
 
     return () => {
       active = false;
@@ -154,11 +196,88 @@ export default function App() {
             />
           ) : selectedSection === "faq" ? (
             <FaqListPanel loading={loadingFaqs} error={faqError} faqState={faqState} />
+          ) : selectedSection === "voice" ? (
+            <VoiceSettingsPanel
+              loading={loadingVoices}
+              error={voiceError}
+              voiceState={voiceState}
+              savingVoiceId={savingVoiceId}
+              onSelectVoice={async (voiceId) => {
+                try {
+                  setSavingVoiceId(voiceId);
+                  const updated = await setActiveVoice(voiceId);
+                  setVoiceState(updated);
+                  setVoiceError(null);
+                } catch (updateError) {
+                  const message = updateError instanceof Error ? updateError.message : "Unknown error";
+                  setVoiceError(message);
+                } finally {
+                  setSavingVoiceId(null);
+                }
+              }}
+            />
           ) : (
             <PlaceholderPanel section={selectedSection} />
           )}
         </section>
       </main>
+    </div>
+  );
+}
+
+function VoiceSettingsPanel(props: {
+  loading: boolean;
+  error: string | null;
+  voiceState: VoiceState;
+  savingVoiceId: string | null;
+  onSelectVoice: (voiceId: string) => Promise<void>;
+}) {
+  const { loading, error, voiceState, savingVoiceId, onSelectVoice } = props;
+
+  return (
+    <div className="panel-body">
+      <div className="stat-grid">
+        <article className="stat-card">
+          <span className="stat-label">Current active voice</span>
+          <strong>{voiceState.activeVoiceName || "Loading..."}</strong>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Available voice options</span>
+          <strong>{voiceState.items.length}</strong>
+        </article>
+      </div>
+
+      {loading ? <div className="status-card">Loading voice settings...</div> : null}
+      {error ? <div className="status-card error">{error}</div> : null}
+
+      {!loading && !error ? (
+        <div className="voice-grid">
+          {voiceState.items.map((voice) => {
+            const isSaving = savingVoiceId === voice.id;
+
+            return (
+              <article className="voice-card" key={voice.id}>
+                <div className="voice-card-header">
+                  <div>
+                    <span className="voice-name">{voice.name}</span>
+                    <p>{voice.description}</p>
+                  </div>
+                  {voice.isActive ? <span className="active-badge">Current</span> : null}
+                </div>
+
+                <button
+                  type="button"
+                  className={voice.isActive ? "voice-button muted" : "voice-button"}
+                  onClick={() => void onSelectVoice(voice.id)}
+                  disabled={voice.isActive || isSaving}
+                >
+                  {voice.isActive ? "Active voice" : isSaving ? "Updating..." : "Set active"}
+                </button>
+              </article>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -300,9 +419,8 @@ function UnansweredQueuePanel(props: {
   );
 }
 
-function PlaceholderPanel(props: { section: Exclude<AdminSectionId, "unanswered" | "faq"> }) {
-  const messages: Record<Exclude<AdminSectionId, "unanswered" | "faq">, string> = {
-    voice: "This panel will host the four concierge voice options and active-voice selection.",
+function PlaceholderPanel(props: { section: Exclude<AdminSectionId, "unanswered" | "faq" | "voice"> }) {
+  const messages: Record<Exclude<AdminSectionId, "unanswered" | "faq" | "voice">, string> = {
     playground: "This panel is ready for the embedded admin-side concierge test experience.",
   };
 
