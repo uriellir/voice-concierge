@@ -10,6 +10,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AdminUi", policy =>
+    {
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -32,6 +42,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AdminUi");
 app.UseAuthorization();
 app.MapControllers();
 
@@ -138,6 +149,32 @@ app.MapPost("/api/unanswered", async (UnansweredQuestionRequest request, Unanswe
 })
 .WithName("RecordUnansweredQuestion")
 .WithTags("Knowledge");
+
+app.MapGet("/api/admin/unanswered", async (AppDbContext dbContext, CancellationToken cancellationToken) =>
+{
+    var items = await dbContext.UnansweredQuestions
+        .OrderByDescending(x => x.Count)
+        .ThenByDescending(x => x.LastSeenAt)
+        .Select(x => new
+        {
+            x.Id,
+            x.OriginalText,
+            x.NormalizedQuestion,
+            x.Count,
+            x.FirstSeenAt,
+            x.LastSeenAt
+        })
+        .ToListAsync(cancellationToken);
+
+    return Results.Ok(new
+    {
+        TotalQuestions = items.Count,
+        TotalMentions = items.Sum(x => x.Count),
+        Items = items
+    });
+})
+.WithName("GetUnansweredQuestionsQueue")
+.WithTags("Admin");
 
 using (var scope = app.Services.CreateScope())
 {
