@@ -70,6 +70,7 @@ The current admin implementation focuses on:
 - FAQ list and search
 - unanswered-questions review workflow
 - voice selection and current active voice display
+- an embedded browser-based test mode playground
 
 This separation makes it easier to explain, test, and evolve each concern independently.
 
@@ -171,6 +172,7 @@ The first implemented admin slice focuses on:
 - viewing frequency counts for repeated unanswered questions
 - viewing the available voice options
 - selecting the active voice for new conversations
+- testing concierge conversations inside the admin UI
 
 The FAQ view is intentionally read-only at this stage so the first admin increment can validate the data flow and layout before adding create, edit, and delete workflows.
 
@@ -185,6 +187,23 @@ This makes it possible to:
 - apply voice changes without restarting the running agent
 
 The current implementation applies the selected voice to new conversations by having the agent fetch the active voice from the API when a new session starts.
+
+## Why The Integrated Playground Uses Browser Speech APIs
+
+The admin panel includes an embedded `Test Mode` playground so staff can test the concierge experience without leaving the admin UI.
+
+For this stage, the integrated playground uses browser speech recognition and speech synthesis rather than a full in-browser LiveKit client.
+
+Why:
+
+- it provides the required embedded admin-side conversation flow quickly
+- it reuses the existing `/api/concierge/ask` backend path
+- it keeps the integrated playground lightweight while the core LiveKit agent remains unchanged
+
+Tradeoff:
+
+- the embedded admin playground is a practical browser test mode, not yet a full browser LiveKit session
+- spoken output depends on browser-available voices, even though the selected active voice is still reflected in the admin experience
 
 ## Seeded CSV Data
 

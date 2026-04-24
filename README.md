@@ -14,7 +14,7 @@ The current implementation supports:
 - unanswered-question tracking
 - seeded Meridian property data
 - a LiveKit-powered voice playground flow
-- an admin panel for reviewing FAQ items, unanswered questions, and voice settings
+- an admin panel for reviewing FAQ items, unanswered questions, voice settings, and an embedded test-mode playground
 
 ## Architecture
 
@@ -33,7 +33,7 @@ The system is split into three layers:
 
 - `src/admin`
   - owns the admin experience
-  - currently includes FAQ review, unanswered questions review, and voice settings modules
+  - currently includes FAQ review, unanswered questions review, voice settings, and an embedded playground
 
 ## Project Structure
 
@@ -177,6 +177,10 @@ The current admin implementation includes:
 - a voice settings view
 - active voice selection
 - current active voice display
+- an embedded playground labeled as `Test Mode`
+- start and end conversation controls
+- browser microphone input and spoken output
+- transcript and response display inside the admin UI
 
 This currently covers:
 
@@ -185,6 +189,7 @@ This currently covers:
 - See frequency count for each unanswered question
 - Select active voice
 - Display current active voice
+- Embedded admin playground in test mode
 
 ### 2. Generate Embeddings
 
@@ -230,6 +235,28 @@ Use the LiveKit Agents Playground:
 - the agent calls the backend `/api/concierge/ask`
 - the backend returns a grounded result or fallback
 - the agent responds with spoken concierge-style audio
+
+### 4. Testing In The Admin Panel
+
+The admin UI also includes an embedded `Test Mode` playground.
+
+Open:
+
+- [http://localhost:5173](http://localhost:5173)
+
+Then:
+
+1. open the `Playground` tab
+2. click `Start conversation`
+3. allow microphone access
+4. ask a concierge question
+
+The embedded playground:
+
+- sends the recognized question to `/api/concierge/ask`
+- uses the live FAQ knowledge base
+- reflects the current active voice selection in the UI
+- speaks the concierge response back in the browser
 
 ## Important Endpoints
 
@@ -294,6 +321,17 @@ Content-Type: application/json
 
 {
   "voiceId": "james"
+}
+```
+
+### Ask the concierge from the embedded playground
+
+```http
+POST http://localhost:8080/api/concierge/ask
+Content-Type: application/json
+
+{
+  "query": "Is the poker room open right now?"
 }
 ```
 
@@ -370,6 +408,15 @@ Check:
 - `.env` has the correct LiveKit credentials
 - `LLM_API_KEY` is present
 - `meridian-concierge` appears in your LiveKit dashboard
+
+### The embedded admin playground does not start listening
+
+Check:
+
+- you are using a browser with speech-recognition support
+- microphone permissions were granted
+- the API is reachable on `http://localhost:8080`
+- the browser supports speech synthesis for spoken replies
 
 ### LiveKit agent starts but errors about turn detector files
 
