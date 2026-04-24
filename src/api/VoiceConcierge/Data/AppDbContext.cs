@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<KnowledgeItem> KnowledgeItems => Set<KnowledgeItem>();
     public DbSet<KnowledgeEmbedding> KnowledgeEmbeddings => Set<KnowledgeEmbedding>();
     public DbSet<UnansweredQuestion> UnansweredQuestions => Set<UnansweredQuestion>();
+    public DbSet<VoiceConfiguration> VoiceConfigurations => Set<VoiceConfiguration>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -74,6 +75,17 @@ public class AppDbContext : DbContext
                 .HasDefaultValueSql("NOW()");
 
             entity.Property(x => x.LastSeenAt)
+                .HasDefaultValueSql("NOW()");
+        });
+
+        modelBuilder.Entity<VoiceConfiguration>(entity =>
+        {
+            entity.ToTable("voice_configurations");
+
+            entity.Property(x => x.CreatedAt)
+                .HasDefaultValueSql("NOW()");
+
+            entity.Property(x => x.UpdatedAt)
                 .HasDefaultValueSql("NOW()");
         });
     }

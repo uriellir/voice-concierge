@@ -32,6 +32,7 @@ builder.Services.AddScoped<KnowledgeItemTransformer>();
 builder.Services.AddScoped<KnowledgeSearchService>();
 builder.Services.AddScoped<UnansweredQuestionService>();
 builder.Services.AddScoped<DatabaseSeeder>();
+builder.Services.AddScoped<VoiceConfigurationService>();
 
 var app = builder.Build();
 
@@ -203,6 +204,37 @@ app.MapGet("/api/admin/faqs", async (AppDbContext dbContext, CancellationToken c
 .WithName("GetAdminFaqs")
 .WithTags("Admin");
 
+app.MapGet("/api/admin/voice-options", async (VoiceConfigurationService voiceConfigurationService, CancellationToken cancellationToken) =>
+{
+    var result = await voiceConfigurationService.GetAdminVoiceOptionsAsync(cancellationToken);
+    return Results.Ok(result);
+})
+.WithName("GetAdminVoiceOptions")
+.WithTags("Admin");
+
+app.MapPut("/api/admin/voice-options/active", async (SetActiveVoiceRequest request, VoiceConfigurationService voiceConfigurationService, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var result = await voiceConfigurationService.SetActiveVoiceAsync(request.VoiceId, cancellationToken);
+        return Results.Ok(result);
+    }
+    catch (ArgumentException exception)
+    {
+        return Results.BadRequest(new { Message = exception.Message });
+    }
+})
+.WithName("SetActiveVoice")
+.WithTags("Admin");
+
+app.MapGet("/api/agent/voice", async (VoiceConfigurationService voiceConfigurationService, CancellationToken cancellationToken) =>
+{
+    var result = await voiceConfigurationService.GetAgentVoiceAsync(cancellationToken);
+    return Results.Ok(result);
+})
+.WithName("GetAgentVoice")
+.WithTags("Agent");
+
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -210,6 +242,9 @@ using (var scope = app.Services.CreateScope())
 
     var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
     await seeder.SeedAsync();
+
+    var voiceConfigurationService = scope.ServiceProvider.GetRequiredService<VoiceConfigurationService>();
+    await voiceConfigurationService.EnsureSeededAsync();
 }
 
 app.Run();
@@ -255,3 +290,4 @@ public sealed record KnowledgeSearchRequest(
     bool AutoRecordUnansweredWhenNoMatch = false);
 public sealed record ReindexEmbeddingsRequest(bool Force = false);
 public sealed record UnansweredQuestionRequest(string Question);
+public sealed record SetActiveVoiceRequest(string VoiceId);
